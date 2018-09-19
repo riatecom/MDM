@@ -43,6 +43,7 @@ mdm$Number.Dead
 library(cartography)
 propSymbolsLayer(mdm, var  = "Number.Dead")
 
+# xx
 
 
 
