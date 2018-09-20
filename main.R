@@ -28,16 +28,22 @@ mdm <- cbind(mdm, latlon)
 # Transform to sf object
 mdm <- st_as_sf(mdm, coords = c("lon", "lat"), crs = 4326)
 mdm <- mdm[mdm$Region.of.Incident%in%"Mediterranean",]
+mdm <- st_transform(mdm, 3395)
+
+
 ocean <- st_read(dsn = "data/ne_50m_ocean.shp")
 ocean <- st_transform(ocean, 3395 )
-bbfigure <- st_bbox(c(xmin = -802842.6, xmax = 4047417.1, ymin = 3500000, ymax = 5681889), crs = st_crs(ocean))
-plot(ocean$geometry)
-bbocean <- st_bbox(c(xmin = -982842.6, xmax = 4047417.1, ymin = 3500000, ymax = 5681889), crs = st_crs(ocean))
+oceanun <- ocean
+# plot(ocean$geometry)
+bbocean <- st_bbox(c(xmin = -982842.6, xmax = 4047417.1, 
+                     ymin = 3500000, ymax = 5710000), crs = st_crs(ocean))
 ocean <- st_crop(ocean, bbocean)
-plot(ocean$geometry)
-
 ocean <- st_cast(ocean, to = "POLYGON")
-ocean <- ocean[-c(1, 3), ]
+plot(ocean$geometry, col = "red")
+plot(ocean$geometry[10], col = "blue", add=T)
+ocean <- ocean[10, ]
+
+
 p2 <- rbind(c(3030089,4992571), 
             c(3030089,5927043), 
             c(4155959,5927043),
@@ -47,24 +53,20 @@ pol <-st_polygon(list(p2))
 pol <- st_sfc(pol, crs = st_crs(ocean))
 ocean <- st_difference(ocean, pol)
 
+bbocean[c(1,3)] + c(1000, 2000)
+getFigDim(x = ocean, width = 800, res = 100, mar= c(0,0,1.2,0))
 
-png("toto.png", width = 600, height = 400, res = 100)
-par(mar = c(0,0,1.4,0))
-plot(ocean$geometry,col = "blue",  xlim = bbfigure[c(1,3)], ylim = bbfigure[c(2,4)])
-plot(ocean$geometry, col ="lightblue",  border = NA, add=T)
-layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = T)
+png("toto.png", width = 800, height = 380, res = 100)
+par(mar = c(0,0,1.2,0))
+plot(ocean$geometry,col = "lightblue", border = NA, 
+     xlim = c(-570000, 3900000), ylim = c(3500000, 5600000))
+propSymbolsLayer(mdm, var  = "Number.Dead", col = "red", inches = 0.5,
+                 border = "white", lwd = .6, legend.pos = "n")
+layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, author = "")
 dev.off()
 
 
-plot(oceanx$geometry, add=T, col = "red")
-
-
-
-
-
-
-mdm <- st_transform(mdm, 3395)
-
+bbocean[c(2,4)] + c((bbocean[3]-bbocean[1])*2/25,0 )
 
 # MAp position
 dev.off()
