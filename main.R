@@ -2,17 +2,17 @@ library(rnaturalearth)
 library(sf)
 library(cartography)
 
-
-# Data download
-
-## Natural Earth
-ne_download(scale = 50, type = "ocean", category = "physical", destdir = "data", 
-            load = FALSE, returnclass = 'sf')
-ne_download(scale = 50, type = "countries", category = "cultural", 
-            destdir = "data", load = FALSE, returnclass = 'sf')
-# Dataset OIM
-download.file(url = "http://missingmigrants.iom.int/global-figures/all/csv?download=1&eid=12836", 
-              destfile = "data/mdm.csv")
+# 
+# # Data download
+# 
+# ## Natural Earth
+# ne_download(scale = 50, type = "ocean", category = "physical", destdir = "data", 
+#             load = FALSE, returnclass = 'sf')
+# ne_download(scale = 50, type = "countries", category = "cultural", 
+#             destdir = "data", load = FALSE, returnclass = 'sf')
+# # Dataset OIM
+# download.file(url = "http://missingmigrants.iom.int/global-figures/all/csv?download=1&eid=12836", 
+#               destfile = "data/mdm.csv")
 
 
 
@@ -33,17 +33,11 @@ mdm <- st_transform(mdm, 3395)
 
 ocean <- st_read(dsn = "data/ne_50m_ocean.shp")
 ocean <- st_transform(ocean, 3395 )
-oceanun <- ocean
-# plot(ocean$geometry)
-bbocean <- st_bbox(c(xmin = -982842.6, xmax = 4047417.1, 
-                     ymin = 3500000, ymax = 5710000), crs = st_crs(ocean))
+bbocean <- st_bbox(c(xmin = -982800, xmax = 4070000, 
+                     ymin = 3450000, ymax = 5710000), crs = st_crs(ocean))
 ocean <- st_crop(ocean, bbocean)
 ocean <- st_cast(ocean, to = "POLYGON")
-plot(ocean$geometry, col = "red")
-plot(ocean$geometry[10], col = "blue", add=T)
 ocean <- ocean[10, ]
-
-
 p2 <- rbind(c(3030089,4992571), 
             c(3030089,5927043), 
             c(4155959,5927043),
@@ -52,6 +46,29 @@ p2 <- rbind(c(3030089,4992571),
 pol <-st_polygon(list(p2))
 pol <- st_sfc(pol, crs = st_crs(ocean))
 ocean <- st_difference(ocean, pol)
+
+plot(ocean$geometry)
+sizes <- getFigDim(x = ocean, width = 1200,mar = c(0.4,0,1.2,0.4), res = 100)
+# export the map
+png(file = "toto.png", width = sizes[1], height = sizes[2], res = 100)
+par(mar = c(0.4,0,1.2,0.4))
+b <- st_bbox(ocean)
+f <- 26
+xlim <- c(b[1] + (b[3] - b[1])/f , b[3] - (b[3] - b[1])/f)
+ylim <- c(b[2] + (b[4] - b[2])/f , b[4] - (b[4] - b[2])/f)
+x <- st_as_sfc(st_bbox(ocean))
+# plot(x, xlim = xlim, ylim = ylim,  border = "red", lwd = 1)
+plot(ocean$geometry,col = "lightblue", border = NA, add=F,
+     xlim = xlim, ylim = ylim)
+propSymbolsLayer(mdm, var  = "Number.Dead", col = "red", inches = 0.5,
+                 border = "white", lwd = .6, legend.pos = "n")
+layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, 
+            sources="", author = "")
+# points(b[1] - (b[3] - b[1])/25, b[2] - (b[4] - b[2])/25, pch = 3, cex = 2) 
+dev.off()
+
+
+
 
 bbocean[c(1,3)] + c(1000, 2000)
 getFigDim(x = ocean, width = 800, res = 100, mar= c(0,0,1.2,0))
@@ -88,6 +105,7 @@ propSymbolsLayer(mdm, var  = "Number.Dead", col = "red", inches = 0.5,
 
 
 # Map zone
+library(cartogram)
 par(mar=c(0,0,0,0), mfrow = c(1,2))
 bbzone <- st_bbox(c(xmin = 1049943, ymin = 3462796, 
                     xmax =2187520,  ymax = 4759943), crs = st_crs(mdm))
