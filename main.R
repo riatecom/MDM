@@ -2,18 +2,6 @@ library(rnaturalearth)
 library(sf)
 library(cartography)
 
-# 
-# # Data download
-# 
-# ## Natural Earth
-# ne_download(scale = 50, type = "ocean", category = "physical", destdir = "data", 
-#             load = FALSE, returnclass = 'sf')
-# ne_download(scale = 50, type = "countries", category = "cultural", 
-#             destdir = "data", load = FALSE, returnclass = 'sf')
-# # Dataset OIM
-# download.file(url = "http://missingmigrants.iom.int/global-figures/all/csv?download=1&eid=12836", 
-#               destfile = "data/mdm.csv")
-
 
 # Data download
 
@@ -97,6 +85,14 @@ lay <- function(title = ""){
 
 
 
+
+
+
+
+
+
+
+
 png("output/layout.png", width = sizes[1], height = sizes[2], res = 100)
 par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,
@@ -104,9 +100,15 @@ plot(ocean$geometry,col = "lightblue", border = NA,
 propSymbolsLayer(mdm, var  = "Total.Dead.and.Missing", col = "red", fixmax = 750,inches = 0.3,
                  border = "white", lwd = .6, legend.pos = "n")
 lay("rough plot")
-
-labelLayer(mdm, txt = "Location.Description")
 dev.off()
+
+
+
+
+
+
+
+
 
 
 
@@ -122,6 +124,14 @@ for (i in 2014:2018){
   # lay(i)
 }
 
+
+
+
+
+
+
+
+
 # Compter les points dans une grille (représentation par points ou par carreaux)
 # Create a regular grid (adm bbox)
 grid <- st_make_grid(x = ocean, cellsize = 100000, what = "polygons")
@@ -131,13 +141,16 @@ grid <- st_sf(idgrid = 1:length(grid), grid)
 . <- st_intersection(mdm, grid)
 griddf <- aggregate(.$Total.Dead.and.Missing, by = list(idgrid = .$idgrid), sum)
 grid <- merge(grid, griddf, by = "idgrid", all.x = TRUE)
-dev.off()
 par(mar = c(0,0,1.2,0), mfrow = c(1,1))
 plot(ocean$geometry,col = "lightblue", border = NA,
      xlim = xlim, ylim = ylim)
 choroLayer(x = grid[grid$x>0,], var = "x", border = NA, add=T, colNA = NA, 
            col = carto.pal("wine.pal", 10), method = "geom", nclass=10)  
 lay()
+
+
+
+
 
 # Aggregation spatiale (avec CAH sur les XY)
 mdm$x <- st_coordinates(mdm)[,1]
@@ -155,9 +168,9 @@ xy <- data.frame(id=data$id,x=data$x,y=data$y)
 rownames(xy) <- xy$id
 d <- dist(xy, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
 cah <- hclust(d, method = method, members = NULL)
-dev.off()
-plot(cah, labels = NULL, hang = 0, axes = TRUE, frame.plot = FALSE,
-     ann = TRUE, main = "Cluster Dendrogram", sub = NULL, xlab = NULL, ylab = "Height")
+# dev.off()
+# plot(cah, labels = NULL, hang = 0, axes = TRUE, frame.plot = FALSE,
+#      ann = TRUE, main = "Cluster Dendrogram", sub = NULL, xlab = NULL, ylab = "Height")
 classif <- cutree(cah, h = height, k = nbclass)
 classif <- as.data.frame(classif)
 classif <- data.frame(id=row.names(classif),class=classif$classif)
@@ -170,6 +183,8 @@ datax<-as.vector(datax)
 datay<-as.vector(datay)
 oim_cah <- data.frame(id=data2$id,x=datax,y=datay,death_aggr=data2$x)
 oim_cah_sf <- st_as_sf(oim_cah, coords = c("x", "y"), crs = st_crs(mdm))
+
+
 
 
 
@@ -195,7 +210,111 @@ layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F,
 dev.off()
 
 
+
+
+
+
+
+
 # Lissage 
+library("SpatialPosition")
+res <- 25000
+span <- 75000
+stew <- stewart(knownpts = as(mdm, 'Spatial'), varname = "Total.Dead.and.Missing", 
+        typefct = "exponential", beta = 2, resolution = res, span = span)
+ras <- rasterStewart(stew)
+contour <- rasterToContourPoly(r = ras, 
+                               breaks = c(0,25,50,100,175,250,500,
+                                          1000,2000,3000,4000))
+iso_pop <- st_as_sf(contour[c(-9, -10),])
+iso_pop
+# order iso surfaces
+iso_pop <- iso_pop[order(iso_pop$center),]
+# color palette à la viridis
+pal <-carto.pal("red.pal", 10)[3:10]
+png("output/smooth2.png", width = sizes[1], height = sizes[2], res = 100)
+par(mar = c(0,0,1.2,0))
+plot(ocean$geometry,col = "lightblue", border = NA,
+     xlim = xlim, ylim = ylim)
+for(i in 1:nrow(iso_pop)){
+  p <- st_geometry(iso_pop[i,])
+  # plot light contour polygons with a Nort-West shift
+  plot(p + c(-5000, 5000), add=T, border = "#ffffff90",col = "#ffffff90")
+  # plot dark contour polygons with a South-East shift
+  plot(p + c(7000, -7000),  col = "#00000099", add=T, border = "#00000099")
+  # plot colored contour polygons in place
+  plot(p, col = pal[i], border = "NA", add=T)
+}
+plot(ocean$geometry,col = NA, border = "#ffffff80", lwd = 0.7,
+     xlim = xlim, ylim = ylim, add=T)
+labtext <- data.frame(lab = c("Central\nMediterranea", "Western\nMediterranea",
+                              "Aegean Sea", "Egypt Coast", "Cyprus", "Crete", "Lybia"), 
+                      x = c(1504634.2, -426723.9, 2978275.7, 3073046.2, 3809219.6, 2796077.6, 1528228), 
+                      y = c(4703372, 3908000, 5000000, 3480000, 4155000, 4000000,3551342 )) 
+text(x = labtext$x, labtext$y, labels =labtext$lab, cex =  c(1, 1, 1, 1, 0.7, 0.7), font = 2)
+bks <- c("Low", "", "Medium", "", "High", "","Very High", "", "")
+legendChoro(pos = "topright", breaks = bks, title.txt = "Level of Mortality\n(dead and missing)",
+            col = pal, nodata = F, values.rnd = -1, cex = 0.7)
+
+layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, 
+            author = "T. Giraud & N. Lambert, 2018", title = "Dead & Missing, 2014 - 2018",
+            source = "Sources: IOM, 2018")
+dev.off()
+
+library(plot3D)
+
+r <- ras
+r <- aggregate(x = r, fact  = c(2,2), method = "bilinear")
+p3 <- as.matrix(r)
+perspbox(z=p3, asp = 1, d = 5, scale = TRUE, bty="b2", expand=0.3, main="test",
+         phi=20, theta=80, zlim=c(0,max(p3)))
+persp3D(z = p3, add=T,  border="grey20", col = "#ffffff")
+
+
+
+
+
+library(rayshader)
+library(magrittr)
+
+elmat = matrix(raster::extract(localtif,raster::extent(localtif),buffer=1000),
+               nrow=ncol(localtif),ncol=nrow(localtif))
+
+
+r <- t(as.matrix(ras))
+elmat <- r/75
+elmat %>%
+  sphere_shade(texture = "imhof3") %>%
+  add_water(detect_water(elmat), color="bw") %>%
+  add_shadow(ray_shade(elmat)) %>%
+  add_shadow(ambient_shade(elmat)) %>%
+  plot_3d(elmat) %>%
+  save_png(elmat,"toto.png")
+
+
+
+
+?sphere_shade
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Zoom + dorling
