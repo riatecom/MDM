@@ -66,7 +66,7 @@ ylim = c(3500000, 5650000)
 
 lay <- function(title = ""){
   # CARTOGRAPHIC LAYOUT
-  layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, 
+  layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
               author = "T. Giraud & N. Lambert, 2018", title = title,
               source = "Sources: IOM, 2018")
   p <- c(-648841, 4467573)
@@ -93,13 +93,18 @@ lay <- function(title = ""){
 
 
 
-png("output/layout.png", width = sizes[1], height = sizes[2], res = 100)
+png("output/rawPlot.png", width = sizes[1], height = sizes[2], res = 100)
 par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,
      xlim = xlim, ylim = ylim)
-propSymbolsLayer(mdm, var  = "Total.Dead.and.Missing", col = "red", fixmax = 750,inches = 0.3,
-                 border = "white", lwd = .6, legend.pos = "n")
-lay("rough plot")
+propSymbolsLayer(mdm, var  = "Total.Dead.and.Missing", 
+                 col = "red", fixmax = 750,inches = 0.3,
+                 border = "white", lwd = .8, legend.pos = "n")
+legendCirclesSymbols(pos = "topright", 
+                     title.txt = "Number of\ndead and missing", 
+                     var = c(750,300,100,10), inches = .3, col = "red", 
+                     style = "e")
+lay("Dead & Missing Migrants, 2014-2018")
 dev.off()
 
 
@@ -118,17 +123,12 @@ par(mar = c(0,0,1.2,0), mfrow = c(3,2))
 for (i in 2014:2018){
   plot(ocean$geometry,col = "lightblue", border = NA,
        xlim = xlim, ylim = ylim)
-  propSymbolsLayer(mdm[mdm$Reported.Year==i,], var  = "Total.Dead.and.Missing", col = "red", inches = 0.3,
+  propSymbolsLayer(mdm[mdm$Reported.Year==i,], 
+                   var  = "Total.Dead.and.Missing", col = "red", inches = 0.3,
                    border = "white", lwd = .6, legend.pos = "n", fixmax = 750)
   box()
   # lay(i)
 }
-
-
-
-
-
-
 
 
 
@@ -141,12 +141,25 @@ grid <- st_sf(idgrid = 1:length(grid), grid)
 . <- st_intersection(mdm, grid)
 griddf <- aggregate(.$Total.Dead.and.Missing, by = list(idgrid = .$idgrid), sum)
 grid <- merge(grid, griddf, by = "idgrid", all.x = TRUE)
-par(mar = c(0,0,1.2,0), mfrow = c(1,1))
+
+png("output/gridPlot.png", width = sizes[1], height = sizes[2], res = 100)
+par(mar = c(0,0,1.2,0))
+bks <- getBreaks(grid[grid$x>0,"x", drop = T], nclass = 10, method = "geom")
+cols <- carto.pal("red.pal", 10)
 plot(ocean$geometry,col = "lightblue", border = NA,
      xlim = xlim, ylim = ylim)
-choroLayer(x = grid[grid$x>0,], var = "x", border = NA, add=T, colNA = NA, 
-           col = carto.pal("wine.pal", 10), method = "geom", nclass=10)  
-lay()
+choroLayer(x = grid[grid$x>0,], var = "x", legend.pos = NA,
+           border = NA, add=T, colNA = NA, 
+           col =cols, breaks = bks) 
+legendChoro(pos = "topright", title.txt = "Density of\ndead and missing\n(per 100 km2)",
+            breaks = bks, col = cols, cex = 0.6, values.rnd = 0, nodata = F)
+plot(grid[order(grid$x, decreasing = T),"geometry"][1,], add=T, lwd = 2)
+p <- c(-648841, 4467573)
+text(1240000, 3735000, "24.5\ndead or missing\nper km2", adj = c(0.5 ,1),  col="#70747a",cex=0.7)
+arrows(1254749, 3737898, 1307223, 3804683, code = 2, length = 0.1,  col="#70747a")
+lay("Dead & Missing Migrants, 2014-2018")
+dev.off()
+
 
 
 
@@ -184,11 +197,6 @@ datay<-as.vector(datay)
 oim_cah <- data.frame(id=data2$id,x=datax,y=datay,death_aggr=data2$x)
 oim_cah_sf <- st_as_sf(oim_cah, coords = c("x", "y"), crs = st_crs(mdm))
 
-
-
-
-
-
 png("output/CAH.png", width = sizes[1], height = sizes[2], res = 100)
 par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,
@@ -198,14 +206,17 @@ propSymbolsLayer(x = oim_cah_sf, var = "death_aggr",
                  legend.pos = "n", border = "white",
                  legend.title.txt = "death_aggr",
                  legend.style = "c",inches = 0.3)
-labelLayer(x = oim_cah_sf[-5,], txt = "death_aggr", cex = c(2, 1, 1, 0.7, 0.7, 0.7, 0.7), col = "white")
-labtext <- data.frame(lab = c("Central\nMediterranea", "Western\nMediterranea", "Aegean Sea", "Egypt Coast", "Cyprus", "Crete"), 
+labelLayer(x = oim_cah_sf[-5,], txt = "death_aggr", cex = c(2, 1, 1, 0.7, 0.7, 0.7, 0.7), 
+           col = "white")
+labtext <- data.frame(lab = c("Central\nMediterranea", "Western\nMediterranea", 
+                              "Aegean Sea", "Egypt Coast", "Cyprus", "Crete"), 
                       x = c(1544634.2, -426723.9, 2988275.7, 3073046.2, 3809219.6, 2796077.6), 
                       y = c(4258000, 4008000, 4802000, 3600000, 4167000, 4050000)) 
 text(x = labtext$x, labtext$y, labels =labtext$lab, cex =  c(1.6, 1, 1, 0.7, 0.7, 0.7), font = 2)
 
-layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, 
-            author = "T. Giraud & N. Lambert, 2018", title = "title",
+layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
+            author = "T. Giraud & N. Lambert, 2018", 
+            title = "Dead & Missing Migrants, 2014-2018",
             source = "Sources: IOM, 2018")
 dev.off()
 
@@ -245,42 +256,101 @@ for(i in 1:nrow(iso_pop)){
   # plot colored contour polygons in place
   plot(p, col = pal[i], border = "NA", add=T)
 }
-plot(ocean$geometry,col = NA, border = "#ffffff80", lwd = 0.7,
+plot(ocean$geometry,col = NA, border = "#ffffff80", lwd = 1,
      xlim = xlim, ylim = ylim, add=T)
 labtext <- data.frame(lab = c("Central\nMediterranea", "Western\nMediterranea",
                               "Aegean Sea", "Egypt Coast", "Cyprus", "Crete", "Lybia"), 
-                      x = c(1504634.2, -426723.9, 2978275.7, 3073046.2, 3809219.6, 2796077.6, 1528228), 
-                      y = c(4703372, 3908000, 5000000, 3480000, 4155000, 4000000,3551342 )) 
-text(x = labtext$x, labtext$y, labels =labtext$lab, cex =  c(1, 1, 1, 1, 0.7, 0.7), font = 2)
+                      x = c(1504634.2, -426723.9, 2978275.7, 
+                            3073046.2, 3809219.6, 2796077.6, 1528228), 
+                      y = c(4703372, 3908000, 5000000, 3480000, 
+                            4155000, 4000000,3551342 )) 
+text(x = labtext$x, labtext$y, labels =labtext$lab, 
+     cex = c(1, 1, 1, 1, 0.7, 0.7), font = 2)
 bks <- c("Low", "", "Medium", "", "High", "","Very High", "", "")
-legendChoro(pos = "topright", breaks = bks, title.txt = "Level of Mortality\n(dead and missing)",
+legendChoro(pos = "topright", breaks = bks, 
+            title.txt = "Level of Mortality\n(dead and missing)",
             col = pal, nodata = F, values.rnd = -1, cex = 0.7)
-
-layoutLayer(frame = FALSE, tabtitle = TRUE, scale = 200, north = F, 
-            author = "T. Giraud & N. Lambert, 2018", title = "Dead & Missing, 2014 - 2018",
+layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
+            author = "T. Giraud & N. Lambert, 2018", 
+            title ="Dead & Missing Migrants, 2014-2018",
             source = "Sources: IOM, 2018")
 dev.off()
 
-library(plot3D)
 
+################### Dorling
+
+library(cartogram)
+w <- 1 - (mdm$y / max(mdm$y))
+mdmdor <- cartogram_dorling(x = st_jitter(mdm), 
+                            weight = "Total.Dead.and.Missing",k = .8)
+
+png("output/dorling.png", width = sizes[1], height = sizes[2], res = 100)
+par(mar = c(0,0,1.2,0))
+plot(ocean$geometry,col = "lightblue", border = NA,
+     xlim = xlim, ylim = ylim)
+plot(mdmdor$geometry, add=T,  border = "white", col = "red", lwd = .8)
+lay("Dead & Missing Migrants, 2014-2018")
+dev.off()
+
+
+
+
+
+
+
+
+
+library(mapview)
+mapview(st_jitter(mdm)) + mapview(iso_pop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############""
+
+
+
+
+
+
+
+
+
+
+library(plot3D)
 r <- ras
 r <- aggregate(x = r, fact  = c(2,2), method = "bilinear")
 p3 <- as.matrix(r)
 perspbox(z=p3, asp = 1, d = 5, scale = TRUE, bty="b2", expand=0.3, main="test",
          phi=20, theta=80, zlim=c(0,max(p3)))
 persp3D(z = p3, add=T,  border="grey20", col = "#ffffff")
-
-
-
-
-
 library(rayshader)
 library(magrittr)
-
 elmat = matrix(raster::extract(localtif,raster::extent(localtif),buffer=1000),
                nrow=ncol(localtif),ncol=nrow(localtif))
-
-
 r <- t(as.matrix(ras))
 elmat <- r/75
 elmat %>%
@@ -290,41 +360,9 @@ elmat %>%
   add_shadow(ambient_shade(elmat)) %>%
   plot_3d(elmat) %>%
   save_png(elmat,"toto.png")
-
-
-
-
-?sphere_shade
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Zoom + dorling
-
-
 # zoom + fonction de la distance
-
-
 # MAp position
-
 bbmed <- st_bbox(mdm)
 par(mar=c(0,0,0,0))
 plot(st_geometry(ocean), col = "lightblue", border = NA, 
