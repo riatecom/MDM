@@ -6,19 +6,19 @@ library(cartography)
 # Data download
 
 ## Natural Earth
-ne_download(scale = 50, type = "ocean", category = "physical", destdir = "data", 
-            load = FALSE, returnclass = 'sf')
-ne_download(scale = 50, type = "countries", category = "cultural", 
-            destdir = "data", load = FALSE, returnclass = 'sf')
+# ne_download(scale = 50, type = "ocean", category = "physical", destdir = "data", 
+#             load = FALSE, returnclass = 'sf')
+# ne_download(scale = 50, type = "countries", category = "cultural", 
+#             destdir = "data", load = FALSE, returnclass = 'sf')
 
 # Dataset OIM 
 
 ## Download
 
-for (i in 2014:2018){
-  download.file(url = paste0("http://missingmigrants.iom.int/global-figures/",i,"/csv"), 
-                destfile = paste0("data/mdm",i,".csv"))
-}
+# for (i in 2014:2018){
+#   download.file(url = paste0("http://missingmigrants.iom.int/global-figures/",i,"/csv"), 
+#                 destfile = paste0("data/mdm",i,".csv"))
+# }
 
 ## Data import
 
@@ -35,7 +35,10 @@ colnames(latlon) <- c("lat", 'lon')
 mdm <- cbind(mdm, latlon)
 
 mdm <- st_as_sf(mdm, coords = c("lon", "lat"), crs = 4326)
-mdm <- mdm[mdm$Region.of.Incident%in%"Mediterranean",]
+
+plot(mdm)
+
+mdm <- mdm[mdm$Region%in%"Mediterranean",]
 mdm <- st_transform(mdm, 3395)
 
 # Ocean
@@ -82,8 +85,6 @@ lay <- function(title = ""){
   text( 1481923, 3505165, "LIBYA", adj = c(0.5,0), col="#70747a",cex=0.8)
   text( 2400125, 4806420, "GREECE", adj = c(0.5,0), col="#70747a",cex=0.8)
 }
-
-
 
 
 
@@ -297,132 +298,90 @@ dev.off()
 
 
 
-
-
-
-library(mapview)
-mapview(st_jitter(mdm)) + mapview(iso_pop)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###############""
-
-
-
-
-
-
-
-
-
-
-library(plot3D)
-r <- ras
-r <- aggregate(x = r, fact  = c(2,2), method = "bilinear")
-p3 <- as.matrix(r)
-perspbox(z=p3, asp = 1, d = 5, scale = TRUE, bty="b2", expand=0.3, main="test",
-         phi=20, theta=80, zlim=c(0,max(p3)))
-persp3D(z = p3, add=T,  border="grey20", col = "#ffffff")
-library(rayshader)
-library(magrittr)
-elmat = matrix(raster::extract(localtif,raster::extent(localtif),buffer=1000),
-               nrow=ncol(localtif),ncol=nrow(localtif))
-r <- t(as.matrix(ras))
-elmat <- r/75
-elmat %>%
-  sphere_shade(texture = "imhof3") %>%
-  add_water(detect_water(elmat), color="bw") %>%
-  add_shadow(ray_shade(elmat)) %>%
-  add_shadow(ambient_shade(elmat)) %>%
-  plot_3d(elmat) %>%
-  save_png(elmat,"toto.png")
-# Zoom + dorling
-# zoom + fonction de la distance
-# MAp position
-bbmed <- st_bbox(mdm)
-par(mar=c(0,0,0,0))
-plot(st_geometry(ocean), col = "lightblue", border = NA, 
-     xlim = bbmed[c(1,3)], ylim = bbmed[c(2,4)])
-plot(mdm$geometry, add=T, pch = 21, bg = "red", col = "white", 
-     lwd = .8, cex = 0.75)
-
-
-# MAp Quantities
-plot(st_geometry(ocean), col = "lightblue", border = NA, 
-     xlim = bbmed[c(1,3)], ylim = bbmed[c(2,4)])
-propSymbolsLayer(mdm, var  = "Total.Dead.and.Missing", col = "red", inches = 0.5,
-                 border = "white", lwd = .6)
-
-
-
-# Map zone
-library(cartogram)
-par(mar=c(0,0,0,0), mfrow = c(1,2))
-bbzone <- st_bbox(c(xmin = 1049943, ymin = 3462796, 
-                    xmax =2187520,  ymax = 4759943), crs = st_crs(mdm))
-mdmzone <- st_crop(mdm, bbzone)
-mdmzone <- mdmzone[!is.na(mdmzone$Number.Dead),]
-
-plot(st_geometry(ocean), col = "lightblue", border = NA, 
-     xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
-propSymbolsLayer(mdmzone, var  = "Total.Dead.and.Missing", col = "red", 
-                 border = "white", lwd = .6, inches = 0.25)
-
-w <- 1 - (mdmzone$Total.Dead.and.Missing / max(mdmzone$Total.Dead.and.Missing))
-mdmdor <- cartogram_dorling(x = st_jitter(mdmzone), 
-                            weight = "Total.Dead.and.Missing", k = 2)
-plot(st_geometry(ocean), col = "lightblue", border = NA, 
-     xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
-plot(mdmdor$geometry, add=T,  border = "white", col = "red", lwd = .8)
-typoLayer(mdmdor, var = "Reported.Year", col = carto.pal("wine.pal", 7)[3:7],add=T, border ="grey", lwd = 0.5)
-
-
-# 
-# library(SpatialPosition)
-# x <- as(mdm,'Spatial')
-# xx <- quickStewart(spdf = x, df = x@data, var = "Number.Dead", typefct = "exponential", span = 75000, beta = 3)
+################################################################################
+# library(plot3D)
+# r <- ras
+# r <- aggregate(x = r, fact  = c(2,2), method = "bilinear")
+# p3 <- as.matrix(r)
+# perspbox(z=p3, asp = 1, d = 5, scale = TRUE, bty="b2", expand=0.3, main="test",
+#          phi=20, theta=80, zlim=c(0,max(p3)))
+# persp3D(z = p3, add=T,  border="grey20", col = "#ffffff")
+# library(rayshader)
+# library(magrittr)
+# elmat = matrix(raster::extract(localtif,raster::extent(localtif),buffer=1000),
+#                nrow=ncol(localtif),ncol=nrow(localtif))
+# r <- t(as.matrix(ras))
+# elmat <- r/75
+# elmat %>%
+#   sphere_shade(texture = "imhof3") %>%
+#   add_water(detect_water(elmat), color="bw") %>%
+#   add_shadow(ray_shade(elmat)) %>%
+#   add_shadow(ambient_shade(elmat)) %>%
+#   plot_3d(elmat) %>%
+#   save_png(elmat,"toto.png")
+# # Zoom + dorling
+# # zoom + fonction de la distance
+# # MAp position
+# bbmed <- st_bbox(mdm)
 # par(mar=c(0,0,0,0))
 # plot(st_geometry(ocean), col = "lightblue", border = NA, 
 #      xlim = bbmed[c(1,3)], ylim = bbmed[c(2,4)])
-# choroLayer(spdf = xx, var = "center", nclass = 8, add=T)
-
-
-## Across time
-dev.off()
-par(mar=c(0,0,0,0), mfrow = c(2,3))
-for (i in 2014:2018){
-  plot(st_geometry(ocean), col = "lightblue", border = NA, 
-       xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
-  propSymbolsLayer(st_jitter(mdmzone[mdmzone$Reported.Year==i, ]), var  = "Number.Dead", 
-                   col = "red", fixmax = 100,legend.pos = "n",
-                   border = "white", lwd = .6, inches = 0.2)
-  mtext(text = i, side = 3, line = -2)
-}
-
+# plot(mdm$geometry, add=T, pch = 21, bg = "red", col = "white", 
+#      lwd = .8, cex = 0.75)
+# 
+# 
+# # MAp Quantities
+# plot(st_geometry(ocean), col = "lightblue", border = NA, 
+#      xlim = bbmed[c(1,3)], ylim = bbmed[c(2,4)])
+# propSymbolsLayer(mdm, var  = "Total.Dead.and.Missing", col = "red", inches = 0.5,
+#                  border = "white", lwd = .6)
+# 
+# 
+# 
+# # Map zone
+# library(cartogram)
+# par(mar=c(0,0,0,0), mfrow = c(1,2))
+# bbzone <- st_bbox(c(xmin = 1049943, ymin = 3462796, 
+#                     xmax =2187520,  ymax = 4759943), crs = st_crs(mdm))
+# mdmzone <- st_crop(mdm, bbzone)
+# mdmzone <- mdmzone[!is.na(mdmzone$Number.Dead),]
+# 
+# plot(st_geometry(ocean), col = "lightblue", border = NA, 
+#      xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
+# propSymbolsLayer(mdmzone, var  = "Total.Dead.and.Missing", col = "red", 
+#                  border = "white", lwd = .6, inches = 0.25)
+# 
+# w <- 1 - (mdmzone$Total.Dead.and.Missing / max(mdmzone$Total.Dead.and.Missing))
+# mdmdor <- cartogram_dorling(x = st_jitter(mdmzone), 
+#                             weight = "Total.Dead.and.Missing", k = 2)
+# plot(st_geometry(ocean), col = "lightblue", border = NA, 
+#      xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
+# plot(mdmdor$geometry, add=T,  border = "white", col = "red", lwd = .8)
+# typoLayer(mdmdor, var = "Reported.Year", col = carto.pal("wine.pal", 7)[3:7],add=T, border ="grey", lwd = 0.5)
+# 
+# 
+# # 
+# # library(SpatialPosition)
+# # x <- as(mdm,'Spatial')
+# # xx <- quickStewart(spdf = x, df = x@data, var = "Number.Dead", typefct = "exponential", span = 75000, beta = 3)
+# # par(mar=c(0,0,0,0))
+# # plot(st_geometry(ocean), col = "lightblue", border = NA, 
+# #      xlim = bbmed[c(1,3)], ylim = bbmed[c(2,4)])
+# # choroLayer(spdf = xx, var = "center", nclass = 8, add=T)
+# 
+# 
+# ## Across time
+# dev.off()
+# par(mar=c(0,0,0,0), mfrow = c(2,3))
+# for (i in 2014:2018){
+#   plot(st_geometry(ocean), col = "lightblue", border = NA, 
+#        xlim = bbzone[c(1,3)], ylim = bbzone[c(2,4)])
+#   propSymbolsLayer(st_jitter(mdmzone[mdmzone$Reported.Year==i, ]), var  = "Number.Dead", 
+#                    col = "red", fixmax = 100,legend.pos = "n",
+#                    border = "white", lwd = .6, inches = 0.2)
+#   mtext(text = i, side = 3, line = -2)
+# }
+# 
 
 
 
