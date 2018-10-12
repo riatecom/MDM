@@ -42,6 +42,11 @@ mdm <- mdm[mdm$Region%in%"Mediterranean",]
 mdm <- st_transform(mdm, 3395)
 
 # Ocean
+ctry <- st_read("data/ne_50m_admin_0_countries.shp")
+ctry <- st_transform(ctry, 3395)
+
+
+
 
 ocean <- st_read(dsn = "data/ne_50m_ocean.shp")
 ocean <- st_transform(ocean, 3395 )
@@ -232,9 +237,12 @@ dev.off()
 library("SpatialPosition")
 res <- 25000
 span <- 75000
+unk <- CreateGrid(w = as(ocean, 'Spatial'), res = res)
 stew <- stewart(knownpts = as(mdm, 'Spatial'), varname = "Total.Dead.and.Missing", 
-        typefct = "exponential", beta = 2, resolution = res, span = span)
+        typefct = "exponential", beta = 2, unknownpts = unk, span = span)
 ras <- rasterStewart(stew)
+
+# red liss
 contour <- rasterToContourPoly(r = ras, 
                                breaks = c(0,25,50,100,175,250,500,
                                           1000,2000,3000,4000))
@@ -244,7 +252,7 @@ iso_pop
 iso_pop <- iso_pop[order(iso_pop$center),]
 # color palette à la viridis
 pal <-carto.pal("red.pal", 10)[3:10]
-png("output/smooth2.png", width = sizes[1], height = sizes[2], res = 100)
+png("output/smooth1.png", width = sizes[1], height = sizes[2], res = 100)
 par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,
      xlim = xlim, ylim = ylim)
@@ -275,6 +283,45 @@ layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F,
             author = "T. Giraud & N. Lambert, 2018", 
             title ="Dead & Missing Migrants, 2014-2018",
             source = "Sources: IOM, 2018")
+dev.off()
+
+
+
+
+
+
+# Blue liss
+contour <- rasterToContourPoly(r = ras, 
+                               breaks = c(0,5,10,25,50,100,175,250,500,
+                                          1000,2000,3000,4000))
+iso_pop <- st_as_sf(contour)
+iso_pop <- iso_pop[-nrow(iso_pop),]
+# order iso surfaces
+iso_pop <- iso_pop[order(iso_pop$center),]
+# color palette à la viridis
+
+carto.pal("blue.pal", 20)[18]
+pal <-carto.pal("blue.pal", nrow(iso_pop))
+png("output/smooth2.png", width = sizes[1], height = sizes[2], res = 100)
+par(mar = c(0,0,1.2,0))
+plot(ocean$geometry,col = "#DCF0F8", border = NA,
+     xlim = xlim, ylim = ylim)
+for(i in 1:nrow(iso_pop)){
+  p <- st_geometry(iso_pop[i,])
+  # plot light contour polygons with a Nort-West shift
+  plot(p - c(-5000, 5000), add=T, border = "#ffffff90",col = "#ffffff90")
+  # plot dark contour polygons with a South-East shift
+  plot(p - c(7000, -7000),  col = "#14405A", add=T, border = "#14405A")
+  # plot colored contour polygons in place
+  plot(p, col = pal[i], border = "NA", add=T)
+}
+plot(ctry$geometry, col = "#ffffff", border = "#ffffff", lwd = 1,
+     xlim = xlim, ylim = ylim, add=T)
+bks <- c("Low", "","", "Medium", "","", "High", "","","Very High", "", "")
+legendChoro(pos = "topright", breaks = bks, 
+            title.txt = "Level of Mortality\n(dead and missing)",
+            col = pal, nodata = F, values.rnd = -1, cex = 0.7)
+lay("Dead & Missing Migrants, 2014-2018")
 dev.off()
 
 
