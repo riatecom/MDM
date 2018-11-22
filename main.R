@@ -87,13 +87,6 @@ lay <- function(title = ""){
 }
 
 
-
-
-
-
-
-
-
 png("output/rawPlot.png", width = sizes[1], height = sizes[2], res = 100)
 par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,

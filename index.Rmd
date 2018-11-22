@@ -34,6 +34,30 @@ mdm <- rbind(mdm,read.csv("data/mdm2017.csv", stringsAsFactors = F))
 mdm <- rbind(mdm,read.csv("data/mdm2018.csv", stringsAsFactors = F))
 ```
 
+Chart by year
+
+```{r , eval=TRUE, echo=TRUE}
+par(mar=c(5,8,4,2))
+med <- mdm[mdm$Region == "Mediterranean",]
+med <- aggregate(med$Total.Dead.and.Missing,list(med$Reported.Year), sum, simplify = TRUE )
+colnames(med) <- c("year","nb")
+total <- round(sum(med$nb),-2)
+med[med$year==2018,"year"] <- "2018*"
+barplot(med$nb, main=paste0(total," Dead & Missing Migrants in the\nMediterranean, 2014-2018"), xlab="(*) from 1 January to 3 October 2018", ylab="Number of persons", names.arg=med$year,
+          border="#991313",col=c("red","red","red","red","#ffbaba"))
+
+```
+
+Calculation of the number of deaths or missing persons per day
+
+```{r , eval=TRUE, echo=TRUE}
+
+total <- sum(med$nb)
+nbdays <- 365 + 365 + 366 + 365 + 276
+nbperday <- round(total/nbdays,2)
+nbperday
+```
+
 Conversion to sf & selection of the Mediterranean Area
 
 ```{r , eval=TRUE, echo=TRUE}
