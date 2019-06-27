@@ -3,7 +3,7 @@ getwd()
 ---
 title: "Cartographic Visions<br/>of Dead and Missing Migrants<br/>in the Mediterranean area\n\n(DRAFT VERSION)\n"
 author: "Timothée Giraud & Nicolas LAMBERT"
-date: "October 15, 2018"
+date: "June 27, 2019"
 output:
   rmdformats::html_clean:
     self_contained: true
