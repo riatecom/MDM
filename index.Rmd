@@ -1,7 +1,9 @@
+getwd()
+
 ---
 title: "Cartographic Visions<br/>of Dead and Missing Migrants<br/>in the Mediterranean area\n\n(DRAFT VERSION)\n"
 author: "Timothée Giraud & Nicolas LAMBERT"
-date: "October 15, 2018"
+date: "June 27, 2019"
 output:
   rmdformats::html_clean:
     self_contained: true
@@ -27,25 +29,37 @@ library(cartography)
 Data available on the IOM website: https://missingmigrants.iom.int/downloads
 
 ```{r , eval=TRUE, echo=TRUE}
-mdm <- read.csv("data/mdm2014.csv", stringsAsFactors = F)
-mdm <- rbind(mdm,read.csv("data/mdm2015.csv", stringsAsFactors = F))
-mdm <- rbind(mdm,read.csv("data/mdm2016.csv", stringsAsFactors = F))
-mdm <- rbind(mdm,read.csv("data/mdm2017.csv", stringsAsFactors = F))
-mdm <- rbind(mdm,read.csv("data/mdm2018.csv", stringsAsFactors = F))
+mdm <- read.csv("data/MissingMigrants-Global-2019-06-26T11-57-26.csv", stringsAsFactors = F)
+mdm$Total.Dead.and.Missing <- as.numeric(mdm$Total.Dead.and.Missing)
+mdm <- mdm[mdm$Region == "Mediterranean",]
+mdm$Total.Dead.and.Missing <- as.numeric(mdm$Total.Dead.and.Missing)
+mdm$Total.Dead.and.Missing[mdm$Web.ID == 40345] <- 750
 ```
 
 Chart by year
 
 ```{r , eval=TRUE, echo=TRUE}
-par(mar=c(5,5,4,1.5))
-med <- mdm[mdm$Region == "Mediterranean",]
-med <- aggregate(med$Total.Dead.and.Missing,list(med$Reported.Year), sum, simplify = TRUE )
+
+png("output/chart1.png", width = 600, height = 400, res = 100)
+par(mar=c(5,8,4,2))
+med <- aggregate(mdm$Total.Dead.and.Missing,list(mdm$Reported.Year), sum, simplify = TRUE )
 colnames(med) <- c("year","nb")
 total <- round(sum(med$nb),-2)
-med[med$year==2018,"year"] <- "2018*"
-barplot(med$nb, main=paste0(total," Dead & Missing Migrants in the\nMediterranean, 2014-2018"), xlab="(*) from 1 January to 3 October 2018", ylab="Number of persons", names.arg=med$year,
-          border="#991313",col=c("red","red","red","red","#ffbaba"))
+med[med$year==2019,"year"] <- "2019*"
+barplot(med$nb, xlab=paste0("Total over the perdiod: ",total,"\n(*) from 1 January to 27 June 2019"), ylab="Number of persons", names.arg=med$year,
+        border="#991313",col=c("red","red","red","red","red","#ffbaba"))
+dev.off()
+```
 
+<img src="output/chart1.png"></img>
+
+```{r , eval=TRUE, echo=TRUE}
+mdm$ym <-paste(mdm$Reported.Month,mdm$Reported.Year)
+med2 <- aggregate(mdm$Total.Dead.and.Missing,list(mdm$ym), sum, simplify = TRUE )
+med2 <- med2[order(-med2$x),] 
+colnames(med2) <- c("month","Nb")
+head(med2,10)
+dev.off()
 ```
 
 Calculation of the number of deaths or missing persons per day
@@ -53,7 +67,7 @@ Calculation of the number of deaths or missing persons per day
 ```{r , eval=TRUE, echo=TRUE}
 
 total <- sum(med$nb)
-nbdays <- 365 + 365 + 366 + 365 + 276
+nbdays <- 365 + 365 + 366 + 365 + 365 + 31 + 28 + 31 + 30 + 31 + 27
 nbperday <- round(total/nbdays,2)
 nbperday
 ```
@@ -110,8 +124,8 @@ Layout template
 lay <- function(title = ""){
   # CARTOGRAPHIC LAYOUT
   layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
-              author = "T. Giraud & N. Lambert, 2018", title = title,
-              source = "Sources: IOM, 2018")
+              author = "T. Giraud & N. Lambert, 2019", title = title,
+              source = "Sources: IOM, 2019")
   p <- c(-648841, 4467573)
   text(p[1], 4507864, "Gibraltar", adj = c(0.5,0),  col="#70747a",cex=0.7)
   arrows(p[1], p[2], p[1], p[2]-100000, code = 2, length = 0.1,  col="#70747a")
@@ -143,7 +157,7 @@ legendCirclesSymbols(pos = "topright",
                      title.txt = "Number of\ndead and missing", 
                      var = c(750,300,100,10), inches = .3, col = "red", 
                      style = "e")
-lay("Dead & Missing Migrants, 2014-2018")
+lay("Dead & Missing Migrants, 2014-2019")
 dev.off()
 ```
 
@@ -195,18 +209,18 @@ propSymbolsLayer(x = oim_cah_sf, var = "death_aggr",
                  legend.pos = "n", border = "white",
                  legend.title.txt = "death_aggr",
                  legend.style = "c",inches = 0.3)
-labelLayer(x = oim_cah_sf[-5,], txt = "death_aggr", cex = c(2, 1, 1, 0.7, 0.7, 0.7, 0.7), 
+labelLayer(x = oim_cah_sf[-4,], txt = "death_aggr", cex = c(1, 1, 2, 0.7, 0.7, 0.7, 0.7, 0.7), 
            col = "white")
 labtext <- data.frame(lab = c("Central\nMediterranea", "Western\nMediterranea", 
                               "Aegean Sea", "Egypt Coast", "Cyprus", "Crete"), 
                       x = c(1544634.2, -426723.9, 2988275.7, 3073046.2, 3809219.6, 2796077.6), 
-                      y = c(4258000, 4008000, 4802000, 3600000, 4167000, 4050000)) 
+                      y = c(4258000, 3958000, 4802000, 3600000, 4167000, 4050000)) 
 text(x = labtext$x, labtext$y, labels =labtext$lab, cex =  c(1.6, 1, 1, 0.7, 0.7, 0.7), font = 2)
 
 layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
-            author = "T. Giraud & N. Lambert, 2018", 
-            title = "Dead & Missing Migrants, 2014-2018",
-            source = "Sources: IOM, 2018")
+            author = "T. Giraud & N. Lambert, 2019", 
+            title = "Dead & Missing Migrants, 2014-2019",
+            source = "Sources: IOM, 2019")
 dev.off()
 ```
 <img src="output/CAH.png"></img>
@@ -238,9 +252,9 @@ legendChoro(pos = "topright", title.txt = "Density of\ndead and missing\n(per 10
             breaks = bks, col = cols, cex = 0.6, values.rnd = 0, nodata = F)
 plot(grid[order(grid$x, decreasing = T),"geometry"][1,], add=T, lwd = 2)
 p <- c(-648841, 4467573)
-text(1240000, 3735000, "24.5\ndead or missing\nper km2", adj = c(0.5 ,1),  col="#70747a",cex=0.7)
+text(1240000, 3735000, "25.6\ndead or missing\nper km2", adj = c(0.5 ,1),  col="#70747a",cex=0.7)
 arrows(1254749, 3737898, 1307223, 3804683, code = 2, length = 0.1,  col="#70747a")
-lay("Dead & Missing Migrants, 2014-2018")
+lay("Dead & Missing Migrants, 2014-2019")
 dev.off()
 ```
 
@@ -297,9 +311,9 @@ legendChoro(pos = "topright", breaks = bks,
             title.txt = "Level of Mortality\n(dead and missing)",
             col = pal, nodata = F, values.rnd = -1, cex = 0.7)
 layoutLayer(frame = TRUE, tabtitle = TRUE, scale = 200, north = F, 
-            author = "T. Giraud & N. Lambert, 2018", 
-            title ="Dead & Missing Migrants, 2014-2018",
-            source = "Sources: IOM, 2018")
+            author = "T. Giraud & N. Lambert, 2019", 
+            title ="Dead & Missing Migrants, 2014-2019",
+            source = "Sources: IOM, 2019")
 dev.off()
 ```
 
@@ -342,7 +356,7 @@ bks <- c("Low", "","", "Medium", "","", "High", "","","Very High", "", "")
 legendChoro(pos = "topright", breaks = bks, 
             title.txt = "Level of Mortality\n(dead and missing)",
             col = pal, nodata = F, values.rnd = -1, cex = 0.7)
-lay("Dead & Missing Migrants, 2014-2018")
+lay("Dead & Missing Migrants, 2014-2019")
 dev.off()
 ```
 
@@ -363,7 +377,7 @@ par(mar = c(0,0,1.2,0))
 plot(ocean$geometry,col = "lightblue", border = NA,
      xlim = xlim, ylim = ylim)
 plot(mdmdor$geometry, add=T,  border = "white", col = "red", lwd = .8)
-lay("Dead & Missing Migrants, 2014-2018")
+lay("Dead & Missing Migrants, 2014-2019")
 dev.off()
 ```
 
