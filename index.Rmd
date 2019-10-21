@@ -37,7 +37,7 @@ mdm <- rbind(mdm,read.csv("data/mdm2018.csv", stringsAsFactors = F))
 Chart by year
 
 ```{r , eval=TRUE, echo=TRUE}
-par(mar=c(5,8,4,2))
+par(mar=c(5,5,4,1.5))
 med <- mdm[mdm$Region == "Mediterranean",]
 med <- aggregate(med$Total.Dead.and.Missing,list(med$Reported.Year), sum, simplify = TRUE )
 colnames(med) <- c("year","nb")
